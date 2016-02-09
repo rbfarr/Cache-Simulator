@@ -1,0 +1,158 @@
+--astar.trace--
+
+Cache Settings
+C: 15
+B: 6
+S: 0
+V: 177
+K: 67
+
+Cache Statistics
+Accesses: 501468
+Reads: 289766
+Read misses: 9182
+Read misses combined: 4794
+Writes: 211702
+Write misses: 2511
+Write misses combined: 1460
+Misses: 11693
+Writebacks: 19811
+Victim cache misses: 6254
+Prefetched blocks: 60099
+Useful prefetches: 20823
+Bytes transferred to/from memory: 5514496
+Hit Time: 2.000000
+Miss Penalty: 200
+Miss rate: 0.023318
+Average access time (AAT): 4.494277
+
+Total size = 49096 bytes
+
+
+Explanation:
+I started with a cache size of 2^15 because 2^16 is greater than 49152 bytes (48 KB), and in general, a bigger cache will have a better AAT than a smaller cache. From there, I experimented with block sizes ranging from 2^0 to 2^6 and found that B = 6 works best, which means that the application benefits from the increased spacial locality. Any value of S larger than 0 caused the AAT to increase, which means that the application benefits from having a direct-mapped cache. The value of K was incremented in powers of 2 until AAT stopped improving. After that point, I did a binary search between the two powers of 2 to discover the optimal value of K. It turns out that the application benefits greatly from the sequential locality that a high value of K provides. In general, AAT is improved as V is increased, so the easiest way to determine V is to simply calculate the remaining amount of storage in the 48 KB limit.
+
+The prefetcher is more important than and should be chosen over the victim cache in this case because setting K = 0 causes more of a loss of performance than setting V = 0.
+
+
+--bzip2.trace--
+
+Cache Settings
+C: 15
+B: 6
+S: 0
+V: 177
+K: 17
+
+Cache Statistics
+Accesses: 544514
+Reads: 369344
+Read misses: 4498
+Read misses combined: 147
+Writes: 175170
+Write misses: 4953
+Write misses combined: 416
+Misses: 9451
+Writebacks: 110
+Victim cache misses: 563
+Prefetched blocks: 782
+Useful prefetches: 382
+Bytes transferred to/from memory: 93120
+Hit Time: 2.000000
+Miss Penalty: 200
+Miss rate: 0.017357
+Average access time (AAT): 2.206790
+
+Total size = 49096 bytes
+
+
+Explanation: same as above ^
+
+The victim cache is more important than and should be chosen over the prefetcher in this case because setting V = 0 causes more of a loss of performance than setting K = 0.
+
+
+--mcf.trace--
+
+Cache Settings
+C: 15
+B: 6
+S: 2
+V: 0
+K: 0
+
+Cache Statistics
+Accesses: 507700
+Reads: 280182
+Read misses: 797
+Read misses combined: 797
+Writes: 227518
+Write misses: 4716
+Write misses combined: 4716
+Misses: 5513
+Writebacks: 4900
+Victim cache misses: 5513
+Prefetched blocks: 0
+Useful prefetches: 0
+Bytes transferred to/from memory: 666432
+Hit Time: 2.400000
+Miss Penalty: 200
+Miss rate: 0.010859
+Average access time (AAT): 4.571755
+
+Total size = 36352 bytes
+
+
+Explanation:
+I started with a cache size of 2^15 because 2^16 is greater than 49152 bytes, and in general, a bigger cache will have a better AAT than a smaller cache. From there, I experimented with block sizes ranging from 2^0 to 2^6 and found that B = 6 works best, which means that the application benefits from the increased spacial locality. Increasing S to 2 proved beneficial to the AAT. The AAT was not affected by any value of V or K, meaning that the application has no need to reuse evicted entries and that it does not benefit from the sequential locality of a prefetcher.
+
+Neither the victim cache nor the prefetcher should be used in this case becuase they contribute nothing to AAT.
+
+
+--perlbench.trace--
+
+Cache Settings
+C: 15
+B: 6
+S: 2
+V: 177
+K: 66
+
+Cache Statistics
+Accesses: 507441
+Reads: 302052
+Read misses: 11032
+Read misses combined: 9435
+Writes: 205389
+Write misses: 2835
+Write misses combined: 2377
+Misses: 13867
+Writebacks: 6031
+Victim cache misses: 11812
+Prefetched blocks: 15972
+Useful prefetches: 2839
+Bytes transferred to/from memory: 2164160
+Hit Time: 2.400000
+Miss Penalty: 200
+Miss rate: 0.027327
+Average access time (AAT): 7.055517
+
+Total size = 49096 bytes
+
+
+Explanation:
+I started with a cache size of 2^15 because 2^16 is greater than 49152 bytes, and in general, a bigger cache will have a better AAT than a smaller cache. From there, I experimented with block sizes ranging from 2^0 to 2^6 and found that B = 6 works best, which means that the application benefits from the increased spacial locality. Increasing S to 2 proved beneficial to the AAT. The value of K was incremented in powers of 2 until AAT stopped improving. After that point, I did a binary search between the two powers of 2 to discover the optimal value of K. It turns out that the application benefits greatly from the sequential locality that a high value of K provides. In general, AAT is improved as V is increased, so the easiest way to determine V is to simply calculate the remaining amount of storage in the 48 KB limit.
+
+The victim cache is more important than and should be chosen over the prefetcher in this case because setting V = 0 causes more of a loss of performance than setting K = 0.
+
+
+
+Overall:
+- We assumed that the hit time would remain constant for all cache sizes. In reality, a larger cache would result in a larger hit time.
+- We assumed that we could implement victim caches of arbitrary sizes. In reality, the victim cache size would be a small power of 2.
+- We assumed that the prefetch value could be arbitrary. In reality, it would likely be a power of 2.
+- We assumed that the trace files accurately characterized the behavior of each application and that subsequent runs of the application would generate trace files with similar characteristics as previous runs.
+
+
+
+
+
